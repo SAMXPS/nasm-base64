@@ -218,14 +218,4 @@ int main(int argc, char *argv[]) {
     }
 
     return 0;
-
-    /*for (int i = 0, bytes_left, bytes_to_process; i < sizeof(bytes); i+=3){
-        bytes_left = sizeof(bytes) - i;
-        bytes_to_process = bytes_left > 3 ? 3 : bytes_left;
-        uint32_t join = join_count_and_bytes(bytes_to_process, bytes+i);
-        uint32_t chars = base64_encode(join);
-        print_chars(chars);
-    }
-
-    return 0;*/
 }

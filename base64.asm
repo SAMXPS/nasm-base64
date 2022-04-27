@@ -113,18 +113,18 @@ end:
         
 ;================================================================
 ; i_convert_esi:
-; Rotina interna para converter número de 6 bits em caractere base64
+; Rotina inversa ao conver_esi. Será usada no processo de decode.
 ;================================================================
 i_convert_esi:
-        cmp     esi, '/'                 ; n == 63?
-        je      i_barra                   ; se sim, é uma /
-        cmp     esi, '+'                 ; n == 62?
-        je      i_plus                    ; se sim, é um +
-        cmp     esi, 'Z'                 ; n <= 51?
-        jnbe    i_minusculos                 ; Se nao, vai pra numeros (n esta entre 52 e 61)
-        cmp     esi, '9'                 ; n <= 25?
-        jnbe    i_maiusculos              ; Se nao, vai pra minusculos (n esta entre 26 e 51)
-        jmp     i_numeros              ; Vamos pra maiusculos (n esta entre 0 e 25)
+        cmp     esi, '/'                ; é uma /?
+        je      i_barra                 ; Se sim, vamos pra i_barra.
+        cmp     esi, '+'                ; é um +?
+        je      i_plus                  ; Se sim, vamos pra i_plus.
+        cmp     esi, 'Z'                ; é menor ou igual ao ascii Z?
+        jnbe    i_minusculos            ; Se não, só pode ser minusculo.
+        cmp     esi, '9'                ; é menor ou igual ao ascii '9'?
+        jnbe    i_maiusculos            ; Se não, só pode ser ascii maiusculo.
+        jmp     i_numeros               ; Se sim, só pode ser um número ascii.
 i_maiusculos:
         sub     esi, 'A'
         ret
@@ -146,14 +146,18 @@ i_barra:
 ;================================================================
 ; _base64_decode
 ;
-; Retorna
+; Rotina 'C' que converte 4 caracteres base64 em até 3 bytes.
 ;
-; count: Quantidade de bytes a ser convertido:        está na posicao 0xFF000000 (primeiro  byte dos 32 bits)
-; byte1: Primeiro byte a ser convertido: deve sempre estar na posicao 0x00FF0000 (segundo   byte dos 32 bits)
-; byte2: Segundo  byte a ser convertido: deve sempre estar na posicao 0x0000FF00 (penultimo byte dos 32 bits)
-; byte3: Terceiro byte a ser convertido: deve sempre estar na posicao 0x000000FF (ultimo    byte dos 32 bits)
+; A passagem de parametros deve ser feita utilizando a convenção de chamada C.
+; A rotina recebe apenas um parametro inteiro de 32 bits, que representa a juncao de 4 caracteres: char1,char2,char3,char4.
+; A rotina não faz verificações se os caracteres são válidos dentro do alfabeto base64, simplesmente assume que são.
 ;
-; A funcao retorna 32 bits no eax, sendo que cada byte representa um caractere codificado em base64.
+; Retorna um inteiro de 32 bits, em eax, codificado da seguinte maneira:
+; count:  Quantidade de bytes convertidos: está na posicao 0xFF000000 (primeiro  byte dos 32 bits)
+; byte1: Primeiro byte que foi convertido: está na posicao 0x00FF0000 (segundo   byte dos 32 bits)
+; byte2: Segundo  byte que foi convertido: está na posicao 0x0000FF00 (penultimo byte dos 32 bits)
+; byte3: Terceiro byte que foi convertido: está na posicao 0x000000FF (ultimo    byte dos 32 bits)
+;
 ;================================================================
 _base64_decode:
         push    ebp                     ; ebp deve ser preservado
@@ -174,7 +178,7 @@ loop2:
         shr     esi, cl
 
         and     esi,0xFF                ; Extraindo 8 bits
-        cmp     esi, '='
+        cmp     esi, '='                ; se chegamos em '=', é o final dos dados.
         je      end2
 
         call    i_convert_esi

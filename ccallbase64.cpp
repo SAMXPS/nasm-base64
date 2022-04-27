@@ -7,6 +7,9 @@ extern "C" uint32_t base64_decode(uint32_t join);
 
 static uint32_t print_count = 0;
 
+/**
+ * Função que imprime no arquivo os 4 caracteres codificados dentro dos 32 bits.
+ */
 void print_chars(uint32_t chars, FILE * fp) {
     for (int i = 0; i < 4; i++) {
         char c = (char)((chars >> ((3-i)*8)) & 0xFF);
@@ -18,6 +21,9 @@ void print_chars(uint32_t chars, FILE * fp) {
     }
 }
 
+/**
+ *  Função que imprime no arquivo até 3 bytes, codificados dentro dos 32 bits.
+ */
 int print_bytes(uint32_t join, FILE * fp) {
     uint8_t count = join >> 24;
     uint8_t byte;
@@ -92,7 +98,7 @@ void run_encode(char* i_fname, char* o_fname) {
         }
 
         uint32_t join = join_count_and_bytes(bytes_to_process, buffer);
-        uint32_t chars = base64_encode(join);
+        uint32_t chars = base64_encode(join); // Aqui é a chamada do assembly.
         print_chars(chars, f_out);
     }
 
@@ -128,29 +134,26 @@ void run_decode(char* i_fname, char* o_fname) {
 
     do {
         buffer = 0;
+
         for (int i = 0; i < 4; i++) {
             int r = fgetc(f_in);
             if (r == '\r' || r == '\n') {
                 i--;
             } else if (r == EOF) {
-                printf("Caracteres lidos: %d\r\n", read_count);
-                printf("Bytes escritos: %d\r\n", print_count);
-                printf("ERRO: Fim de arquivo nao esperado!\r\n");
-                fclose(f_in);
-                fclose(f_out);
-                return;
+                if (i != 0)
+                    printf("ERRO: Fim de arquivo nao esperado! abortando...\r\n");
+                goto end;
             } else {
                 read_count++;
-                //printf("%c", r);
                 buffer |= ((uint32_t)(r&0xFF) << (3-i)*8);
             }
         }
-        //printf("\r\n");
-        buffer = base64_decode(buffer);
-        //printf("%08x", buffer);
-        //printf("\r\n");
+
+        buffer = base64_decode(buffer); // Aqui é a chamada do assembly.
     } while (print_bytes(buffer, f_out) == 3);
     
+    end:
+
     printf("Caracteres lidos: %d\r\n", read_count);
     printf("Bytes escritos: %d\r\n", print_count);
     fclose(f_in);
